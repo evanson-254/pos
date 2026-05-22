@@ -1,19 +1,23 @@
-import { Link } from "react-router";
+import { Link, redirect } from "react-router";
 import { Button } from "~/components/ui/button";
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel, FieldLegend, FieldSet } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~/components/ui/select";
 import type { Route } from "./+types/register";
-import { ReusableForm } from "~/components/ui/FetcherForm";
+import { ReusableForm } from "~/components/FetcherForm";
 import { Controller } from "react-hook-form";
+import { apiRequest } from "~/services/apiRequest";
+import { toast } from "sonner";
 interface RegisterInputs {
-    fullName: string,
-    accountType: AccountType,
+    name: string,
+    // account: number,
+    branch_id: number,
+    role_id: number,
     email: string,
     password: string,
-    confirmPassword: string,
+    password_confirmation: string,
 }
-enum AccountType {
+enum accountProp {
     Admin = "admin",
     Manager = "manager",
     Cashier = "cashier",
@@ -23,10 +27,21 @@ enum AccountType {
 
 export async function clientAction({ request }: Route.ClientActionArgs) {
     let formData = await request.formData();
-    return { errors: { confirmPassword: "password mismatch" } };
+    const { data, errors, message, status } = await apiRequest("POST", "/register", formData);
+    if (status == 200) {
+        toast.success(message);
+        return redirect("/login");
+    }
+    return { data, errors, message }
 }
 
-export default function Register() {
+export async function clientLoader({ }) {
+    const { data } = await apiRequest("GET", "/register");
+    return { branches: data?.branches, roles: data?.roles }
+}
+
+export default function Register({ loaderData }: Route.ComponentProps) {
+    const { branches, roles } = loaderData;
     const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[~`!"@#$%^&*()_\-+={[}\]|\\:;"'<,>.?\/ ]).{8,}$/
     return (
         <>
@@ -42,31 +57,55 @@ export default function Register() {
                             <FieldGroup className="gap-5">
                                 <Field>
                                     <FieldLabel>Full name</FieldLabel>
-                                    <Input aria-invalid={errors.fullName ? "true" : "false"} type="text" {...register("fullName", { required: "Full name is required!" })} />
-                                    {errors.fullName && <FieldError>{errors.fullName.message}</FieldError>}
+                                    <Input aria-invalid={errors.name ? "true" : "false"} type="text" {...register("name", { required: "Full name is required!" })} />
+                                    {errors.name && <FieldError>{errors.name.message}</FieldError>}
                                 </Field>
                                 <Field>
-                                    <FieldLabel>account type</FieldLabel>
+                                    <FieldLabel>Branch</FieldLabel>
                                     <Controller
-                                        name="accountType"
+                                        name="branch_id"
                                         control={control}
-                                        rules={{ required: "Account type is required!" }}
+                                        rules={{ required: "Branch is required!" }}
                                         render={({ field }) => (
                                             <Select onValueChange={field.onChange} >
-                                                <SelectTrigger aria-invalid={errors.accountType ? "true" : "false"}>
+                                                <SelectTrigger aria-invalid={errors.branch_id ? "true" : "false"}>
                                                     <SelectValue placeholder="Select an option" />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    <SelectItem value="admin">Admin</SelectItem>
-                                                    <SelectItem value="manager">Manager</SelectItem>
-                                                    <SelectItem value="cashier">Cashier</SelectItem>
-                                                    <SelectItem value="customer">Customer</SelectItem>
+                                                    {
+                                                        branches?.map((branch:any) => (
+                                                            <SelectItem key={branch.id} value={branch.id.toString()}>{branch.name}</SelectItem>
+
+                                                        ))
+                                                    }
                                                 </SelectContent>
                                             </Select>
                                         )}
                                     />
 
-                                    {errors.accountType && <FieldError>{errors.accountType.message}</FieldError>}
+                                    {errors.branch_id && <FieldError>{errors.branch_id.message}</FieldError>}
+                                </Field>
+                                <Field>
+                                    <FieldLabel>Assign role</FieldLabel>
+                                    <Controller
+                                        name="role_id"
+                                        control={control}
+                                        rules={{ required: "Role type is required!" }}
+                                        render={({ field }) => (
+                                            <Select onValueChange={field.onChange} >
+                                                <SelectTrigger aria-invalid={errors.role_id ? "true" : "false"}>
+                                                    <SelectValue placeholder="Select an option" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {roles?.map((role: any) => (
+                                                        <SelectItem key={role.id} value={role.id.toString()}>{role.name}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        )}
+                                    />
+
+                                    {errors.role_id && <FieldError>{errors.role_id.message}</FieldError>}
                                 </Field>
                                 <Field>
                                     <FieldLabel>Email</FieldLabel>
@@ -86,11 +125,11 @@ export default function Register() {
                                 </Field>
                                 <Field>
                                     <FieldLabel>Confirm password</FieldLabel>
-                                    <Input aria-invalid={errors.confirmPassword ? "true" : "false"} type="password" {...register("confirmPassword", {
+                                    <Input aria-invalid={errors.password_confirmation ? "true" : "false"} type="password" {...register("password_confirmation", {
                                         required: "Confirm password is required!",
                                         validate: (value) => value === watch("password") || "Passwords do not match"
                                     })} />
-                                    {errors.confirmPassword && <FieldError>{errors.confirmPassword.message}</FieldError>}
+                                    {errors.password_confirmation && <FieldError>{errors.password_confirmation.message}</FieldError>}
                                 </Field>
                                 <Field>
                                     <Button type="submit" disabled={state != "idle"}>{state != "idle" ? "Processing..." : "Register"}</Button>
@@ -102,7 +141,7 @@ export default function Register() {
                 <p className="">
                     Already have an account? <Link to="/login" className="underline">Login</Link>
                 </p>
-            </div>
+            </div >
         </>
     )
 }

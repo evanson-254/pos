@@ -9,10 +9,10 @@ interface AuthLayoutProp{
 export default function AuthenticationLayout({children}:AuthLayoutProp){
     return(
         <section className="flex h-screen overflow-hidden">
-            <div className="flex-grow-1 flex-shrink-0 hidden p-2  md:flex flex-col  gap-4 items-center rounded-r-xl  justify-center bg-black text-white">
+            <div className="flex-grow-1 flex-shrink-0 hidden p-2  md:flex flex-col  gap-4 items-center rounded-r-xl  justify-center bg-brand text-primary-foreground">
                 <img src="/favicon.ico" alt="logo" />
                 <h6 className="font-semibold">POS</h6>
-                <p className="">
+                <p className="bg-brand">
                     Modern Point of Sales
                 </p>
                 <p>

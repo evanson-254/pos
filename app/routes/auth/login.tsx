@@ -1,10 +1,12 @@
 import { useForm, type SubmitHandler } from "react-hook-form";
-import { Link, useFetcher } from "react-router";
+import { Link, redirect, useFetcher } from "react-router";
 import { Button } from "~/components/ui/button";
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel, FieldLegend, FieldSet } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
 import type { Route } from "./+types/login";
-import { ReusableForm } from "~/components/ui/FetcherForm";
+import { ReusableForm } from "~/components/FetcherForm";
+import { apiRequest } from "~/services/apiRequest";
+import { toast } from "sonner";
 
 interface LoginInputs {
     email: string,
@@ -13,13 +15,13 @@ interface LoginInputs {
 }
 
 export async function clientAction({ request }: Route.ClientActionArgs) {
-    let formData = await request.formData();
-    let email = formData.get("email");
-    let password = formData.get("password");
-    let remember = formData.get("remember");
-
-    console.log(email, password, remember);
-    return { email, password, remember }
+    const formData = await request.formData();
+    const {data, message, status, errors} = await apiRequest("POST", "/login", formData);
+    if(status==200){
+        toast.success(message);
+        return redirect("/");
+    }
+    return {data, errors}
 }
 
 export default function Login() {
@@ -31,7 +33,7 @@ export default function Login() {
                 <ReusableForm<LoginInputs> actionUrl={"/login"}  >
                     {({ register, formState: { errors }, }, { state }) => (
                         <FieldSet className=" md:min-w-[400px] p-3 md:p-0">
-                            <FieldLegend>Login section </FieldLegend>
+                            <FieldLegend className="bg-brand bg-clip-text text-transparent">Login section </FieldLegend>
                             <FieldDescription>Enter your credentials to login.</FieldDescription>
 
                             <FieldGroup className="gap-5">

@@ -5,12 +5,34 @@ import {
   Scripts,
   ScrollRestoration,
   isRouteErrorResponse,
+  useFetcher,
+  useFetchers,
+  useNavigation,
 } from "react-router"
 
 import type { Route } from "./+types/root"
 import "./app.css"
+import { Toaster } from "sonner"
+import { TooltipProvider } from "./components/ui/tooltip"
+import TopBarProgress from "react-topbar-progress-indicator"
+import HydrationFallback from "./components/HydrationFallback"
+
+TopBarProgress.config({
+  barColors: {
+    0: "#ef4444",
+    "0.5": "#f97316",
+    1: "#fb923c",
+  },
+})
 
 export function Layout({ children }: { children: React.ReactNode }) {
+  const navigation = useNavigation();
+  const fetchers = useFetchers();
+
+  const isFetcherLoading = fetchers.some(
+    (fetcher) => fetcher.state !=="idle"
+  )
+
   return (
     <html lang="en">
       <head>
@@ -20,17 +42,24 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Links />
       </head>
       <body>
-        {children}
+        {(navigation.state !=="idle" || isFetcherLoading) && <TopBarProgress />}
+        <TooltipProvider>
+          {children}
+        </TooltipProvider>
+        <Toaster closeButton richColors position={"top-right"}/>
         <ScrollRestoration />
         <Scripts />
       </body>
     </html>
   )
 }
-
+export  function HydrateFallback() {
+  return <HydrationFallback/>
+}
 export default function App() {
   return <Outlet />
 }
+
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
   let message = "Oops!"

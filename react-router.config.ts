@@ -7,4 +7,7 @@ export default {
     return ["/", "/login"];
   },
   ssr: false,
+  future:{
+    v8_middleware: true,
+  }
 } satisfies Config

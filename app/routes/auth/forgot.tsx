@@ -3,12 +3,17 @@ import  { Button } from "~/components/ui/button";
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel, FieldLegend, FieldSet } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
 import type { Route } from "./+types/forgot";
-import { ReusableForm } from "~/components/ui/FetcherForm";
+import { ReusableForm } from "~/components/FetcherForm";
+import { apiRequest } from "~/services/apiRequest";
+import { toast } from "sonner";
 
 export async function clientAction({ request }: Route.ClientActionArgs) {
     let formData = await request.formData();
-    let email = formData.get("email");
-    return { errors: { email: "Email not found" } };
+    const {data, errors, message, status} = await apiRequest("POST", "/forgot-password", formData);
+    if(status==200){
+        toast.success(message);
+    }
+    return { data, errors};
 }
 
 interface ForgotInputs {
