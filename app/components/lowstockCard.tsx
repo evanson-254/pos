@@ -1,6 +1,7 @@
-
+import { useLoaderData } from "react-router";
 import { Badge } from "./ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import type { clientLoader } from "~/routes/home";
 
 const lowStockItems = [
     {
@@ -21,6 +22,7 @@ const lowStockItems = [
 ];
 
 export default function LowStockAlert() {
+    const { lowStockItems } = useLoaderData<typeof clientLoader>();
     return (
         <div className="">
             <Card className="">
@@ -29,7 +31,7 @@ export default function LowStockAlert() {
                 </CardHeader>
 
                 <CardContent className="space-y-4">
-                    {lowStockItems.map((item) => (
+                    {lowStockItems?.map((item:any) => (
                         <div
                             key={item.id}
                             className="flex items-center justify-between border-b pb-3"

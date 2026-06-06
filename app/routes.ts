@@ -7,6 +7,7 @@ export default [
         route("sales-history", "routes/pos/saleshistory.tsx"),
         route("refunds", "routes/pos/refunds.tsx"),
         route("products", "routes/inventory/product.tsx"),
+        route("product/update/:id", "routes/inventory/product_update.tsx"),
         route("category", "routes/inventory/category.tsx"),
         route("purchases", "routes/inventory/purchases.tsx"),
         route("supplier", "routes/inventory/suplier.tsx"),

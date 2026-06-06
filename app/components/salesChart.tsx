@@ -8,6 +8,8 @@ import {
   CartesianGrid,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { useLoaderData } from "react-router";
+import type { clientLoader } from "~/routes/home";
 
 
 
@@ -22,6 +24,7 @@ const salesData = [
 ];
 
 export default function SalesChart() {
+  const { sale_chart: salesData } = useLoaderData<typeof clientLoader>();
   return (
     <Card className="">
       <CardHeader>

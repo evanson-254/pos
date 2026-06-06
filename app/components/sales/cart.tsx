@@ -1,26 +1,34 @@
-import {  Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { Button } from "../ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "../ui/card";
 import { Input } from "../ui/input";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "../ui/table";
 import type { Product } from "~/routes/pos/newsale";
 import { Separator } from "../ui/separator";
+import { ReusableForm } from "../FetcherForm";
 
-type CartItem = Product & {
-  quantity: number;
-  subtotal: number;
+ export type CartItem = Product & {
+    quantity: number;
+    subtotal: number;
 };
 
-interface SalesCartProps{
+interface SalesCartProps {
     cart: CartItem[],
     updateQuantity: any,
-    removeItem:any,
+    removeItem: any,
     total: number,
     tax: number,
     subtotal: number,
+    openCheckoutModal?: any,
 }
 
-export default function SalesCart({cart, updateQuantity, removeItem, subtotal, tax, total}:SalesCartProps) {
+
+export default function SalesCart({ cart, updateQuantity, removeItem, subtotal, tax, total, openCheckoutModal }: SalesCartProps) {
+    //sale item table fields
+    //branch_id, customer_id, user_id, invoice_number, subtotal, tax, total
+    // paid_amount, change_amount,payment_status, sales_status
+    // sale item
+    // sale_id, product_id, subtotal, tax, quantity, price, discount
     return (
         <Card className="sticky top-4 h-fit">
             <CardHeader>
@@ -120,10 +128,26 @@ export default function SalesCart({cart, updateQuantity, removeItem, subtotal, t
                     </div>
                 </div>
 
-                <Button size="lg" className="w-full">
+                <Button size="lg" className="w-full" disabled={cart.length === 0} onClick={() => openCheckoutModal()}>
                     Complete Sale
                 </Button>
             </CardContent>
         </Card>
     )
 }
+
+
+
+// export function SalesItemForm() {
+//     return (
+//         <ReusableForm<combinedsaleFormProps> actionUrl={"/new-sale"}>
+//             {({register }, ) => {
+//                 return (
+//                     <div>
+                        
+//                     </div>
+//                 )
+//             }}
+//         </ReusableForm>
+//     )
+// }

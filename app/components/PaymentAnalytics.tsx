@@ -13,6 +13,8 @@ import {
   CardHeader,
   CardTitle,
 } from "./ui/card";
+import { useLoaderData } from "react-router";
+import type { clientLoader } from "~/routes/home";
 
 const paymentData = [
   {
@@ -30,6 +32,7 @@ const paymentData = [
 ];
 
 export default function PaymentAnalytics() {
+  const { paymentAnalytics:paymentData } = useLoaderData<typeof clientLoader>();
   return (
     <Card className="">
       <CardHeader>

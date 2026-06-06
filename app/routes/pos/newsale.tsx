@@ -2,13 +2,20 @@ import { useMemo, useState } from "react";
 import SalesCart from "~/components/sales/cart";
 import SaleProductDisplay from "~/components/sales/productdisplay";
 import SaleSearch from "~/components/sales/search";
+import type { Route } from "./+types/newsale";
+import { apiRequest } from "~/services/apiRequest";
+import { CheckoutModal } from "~/components/sales/checkout";
+import { toast } from "sonner";
+import { useGlobalBarcodeScanner } from "~/components/BarcodeInput";
 
 
 export type Product = {
     id: number;
+    barcode: string;
+    sku: string;
     name: string;
     price: number;
-    stock: number;
+    quantity: number;
     category: string;
     image?: string
 };
@@ -18,46 +25,60 @@ type CartItem = Product & {
     subtotal: number;
 };
 
-const products: Product[] = [
-    {
-        id: 1,
-        name: "Coca Cola 500ml",
-        price: 120,
-        stock: 20,
-        category: "Drinks",
-    },
-    {
-        id: 2,
-        name: "Bread Large",
-        price: 85,
-        stock: 14,
-        category: "Bakery",
-    },
-    {
-        id: 3,
-        name: "Milk 1L",
-        price: 150,
-        stock: 8,
-        category: "Dairy",
-    },
-    {
-        id: 4,
-        name: "Sugar 2KG",
-        price: 320,
-        stock: 5,
-        category: "Groceries",
-    },
-];
+// const products: Product[] = [
+//     {
+//         id: 1,
+//         name: "Coca Cola 500ml",
+//         price: 120,
+//         stock: 20,
+//         category: "Drinks",
+//     },
+//     {
+//         id: 2,
+//         name: "Bread Large",
+//         price: 85,
+//         stock: 14,
+//         category: "Bakery",
+//     },
+//     {
+//         id: 3,
+//         name: "Milk 1L",
+//         price: 150,
+//         stock: 8,
+//         category: "Dairy",
+//     },
+//     {
+//         id: 4,
+//         name: "Sugar 2KG",
+//         price: 320,
+//         stock: 5,
+//         category: "Groceries",
+//     },
+// ];
 
+export async function clientLoader({ request }: Route.ClientLoaderArgs) {
+    const { data } = await apiRequest("GET", "/sales");
+    return { products: data?.products as Product[] };
+}
 
-export default function NewSale() {
+export async function clientAction({ request }: Route.ClientActionArgs) {
+    const formData = await request.formData();
+    const {data, errors, message, status} = await apiRequest("POST", "/sales/new", formData);
+    if (status === 200) {
+        toast.success(message);
+    }
+    return { data, errors, status }
+}
+
+export default function NewSale({ loaderData }: Route.ComponentProps) {
+    const { products } = loaderData;
     const [search, setSearch] = useState("");
     const [cart, setCart] = useState<CartItem[]>([]);
     const filteredProducts = useMemo(() => {
-        return products.filter((product) =>
-            product.name.toLowerCase().includes(search.toLowerCase())
+        return products?.filter((product) =>
+            product.name?.toLowerCase().includes(search.toLowerCase())||product.barcode?.toLowerCase().includes(search.toLowerCase())||product.sku?.toLowerCase().includes(search.toLowerCase())
         );
-    }, [search]);
+    }, [search, products]);
 
     const addToCart = (product: Product) => {
         setCart((prev) => {
@@ -86,32 +107,43 @@ export default function NewSale() {
         });
     };
 
-     const updateQuantity = (id: number, quantity: number) => {
-    if (quantity < 1) return;
+    const updateQuantity = (id: number, quantity: number) => {
+        if (quantity < 1) return;
 
-    setCart((prev) =>
-      prev.map((item) =>
-        item.id === id
-          ? {
-              ...item,
-              quantity,
-              subtotal: quantity * item.price,
-            }
-          : item
-      )
-    );
-  };
+        setCart((prev) =>
+            prev.map((item) =>
+                item.id === id
+                    ? {
+                        ...item,
+                        quantity,
+                        subtotal: quantity * item.price,
+                    }
+                    : item
+            )
+        );
+    };
 
-  const removeItem = (id: number) => {
-    setCart((prev) => prev.filter((item) => item.id !== id));
-  };
+    const removeItem = (id: number) => {
+        setCart((prev) => prev.filter((item) => item.id !== id));
+    };
 
-  const subtotal = cart.reduce((acc, item) => acc + item.subtotal, 0);
+    const total = cart.reduce((acc, item) => acc + item.subtotal, 0);
 
-  const tax = subtotal * 0.16;
+    const tax = total * 0.16;
 
-  const total = subtotal + tax;
+    const subtotal = total - tax;
+    const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
 
+    const handleSaleCompletion = () => {
+        setCart([]);
+        setIsCheckoutOpen(false);
+    };
+    const handleBarcodeScan = (barcode: string) => {
+        //setSearch(barcode);
+        const selectedProduct = products.find((product) => product.barcode === barcode);
+        selectedProduct&& addToCart(selectedProduct);
+    }
+    useGlobalBarcodeScanner(handleBarcodeScan);
     return (
         <>
             <title>New Sale - POS</title>
@@ -121,8 +153,15 @@ export default function NewSale() {
                         <SaleSearch search={search} setSearch={setSearch} />
                         <SaleProductDisplay filteredProducts={filteredProducts} addToCart={addToCart} />
                     </div>
-                    <SalesCart cart={cart} updateQuantity={updateQuantity} removeItem={removeItem} subtotal={subtotal} tax={tax} total={total} />
+                    <SalesCart openCheckoutModal={() => setIsCheckoutOpen(true)} cart={cart} updateQuantity={updateQuantity} removeItem={removeItem} subtotal={subtotal} tax={tax} total={total} />
                 </div>
+                <CheckoutModal
+                    isOpen={isCheckoutOpen}
+                    onClose={() => {setIsCheckoutOpen(false); handleSaleCompletion();}}
+                    totalAmount={total} // dynamically map from active cart state
+                    items={cart}        // dynamically map from active cart state
+                    onCompleteSale={handleSaleCompletion}
+                />
             </section>
         </>
     )

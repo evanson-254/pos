@@ -1,12 +1,13 @@
 import { ArrowUpRightFromCircle, Bell, BookAudio, Briefcase, Building, CarFrontIcon, CarTaxiFrontIcon, CreditCard, GroupIcon, HistoryIcon, HomeIcon, PlusSquareIcon, Settings, ShieldCheck, ShoppingCart, UserRoundCogIcon, Users, type LucideIcon } from "lucide-react";
 import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "./ui/sidebar";
-import { Link, useLoaderData } from "react-router";
+import { Link, NavLink, useLoaderData, useLocation } from "react-router";
 import type React from "react";
 import { Avatar, AvatarGroup } from "./ui/avatar";
 import { Button } from "./ui/button";
 import { useContext } from "react";
 import { userContext } from "~/middleware/auth";
 import { ReusableForm } from "./FetcherForm";
+import { cn } from "~/lib/utils";
 interface LinksProps {
     name: string,
     path: string,
@@ -163,8 +164,8 @@ interface logoutInputs {
   id: string,
 }
 export default function AppSidebar({ logout }: { logout?: React.ReactNode }) {
-    const {user} = useLoaderData();
-
+    const {user, branch} = useLoaderData();
+    const {pathname} = useLocation();
     return (
         <Sidebar collapsible="icon" variant="inset">
             <SidebarHeader>
@@ -176,7 +177,7 @@ export default function AppSidebar({ logout }: { logout?: React.ReactNode }) {
                             </div>
                             <div className="flex flex-col leading-tight">
                                 <span className="font-medium truncate uppercase">Point of Sale</span>
-                                <span className="truncate">Admin page</span>
+                                <span className="truncate">{branch?.name}</span>
                             </div>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -187,16 +188,22 @@ export default function AppSidebar({ logout }: { logout?: React.ReactNode }) {
                     <SidebarGroup key={key}>
                         <SidebarGroupLabel>{key}</SidebarGroupLabel>
                         <SidebarMenu >
-                            {links.map((link: LinksProps) => (
+                            {links.map((link: LinksProps) => {
+                                const isActive = link.path === pathname;
+                            return (
                                 <SidebarMenuItem key={link.name}>
-                                    <SidebarMenuButton size={"sm"} asChild tooltip={link.name}>
-                                        <Link to={link.path} className="flex active active:bg-primary/90 active:text-primary-foreground items-center gap-2 text-sm">
+                                    <SidebarMenuButton size={"sm"} asChild tooltip={link.name} isActive={isActive}>
+                                        <NavLink 
+                                        to={link.path} 
+
+                                        className={ cn("flex items-center gap-2 text-sm", isActive && "  bg-primary/90! text-primary-foreground!")}>
                                             <link.icon className="w-5 h-5" />
                                             <span>{link.name}</span>
-                                        </Link>
+                                        </NavLink>
                                     </SidebarMenuButton>
                                 </SidebarMenuItem>
-                            ))}
+                            )}
+                        )}
                         </SidebarMenu>
                     </SidebarGroup>
                 ))}
@@ -206,11 +213,12 @@ export default function AppSidebar({ logout }: { logout?: React.ReactNode }) {
             <SidebarFooter>
                 <SidebarMenu>
                     <SidebarMenuItem>
-                        <SidebarMenuButton size={"lg"} asChild tooltip={"Details"}>
+                        <SidebarMenuButton className="h-20" size={"lg"} asChild tooltip={"Details"}>
                             <div className="flex gap-4">
                                 <img src="/logo.png" className="h-10 w-10 object-cover rounded-full" alt="" />
-                                <div className="flex flex-col ">
-                                    <span>{user?.name}</span>
+                                <div className="flex flex-col space-y-1 ">
+                                    <span className="truncate">{user?.name}</span>
+                                    <span className="font-medium truncate text-primary">{user?.role?.name}</span>  
                                     <ReusableForm<logoutInputs> actionUrl="/?index">
                                         {({ register, formState: { errors } }, { state }) => (
                                             <div>

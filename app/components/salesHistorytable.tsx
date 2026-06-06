@@ -3,6 +3,8 @@ import { salesColumn } from "./datatable/column";
 import { DataTable } from "./datatable/table";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardAction } from "./ui/card";
 import { Button } from "./ui/button";
+import { useLoaderData } from "react-router";
+import type { clientLoader } from "~/routes/pos/saleshistory";
 export type sales = {
   id: string;
   customer: string;
@@ -11,6 +13,7 @@ export type sales = {
   items: number;
   total: number;
   status: string;
+  sales:any;
 };
 
 const sales = [
@@ -52,7 +55,8 @@ const sales = [
   },
 ];
 
-export default function SalesHistoryDatatable() {
+export default function SalesHistoryDatatable({displayReceipt}:{displayReceipt:any}) {
+  const { sales, stats } = useLoaderData<typeof clientLoader>();
   return (
     <Card className="border-0 shadow-sm ">
       <CardHeader className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -73,7 +77,7 @@ export default function SalesHistoryDatatable() {
         </CardAction>
       </CardHeader>
       <CardContent>
-        <DataTable columns={salesColumn} data={sales}/>
+        <DataTable columns={salesColumn({displayReceipt})} data={sales}/>
       </CardContent>
     </Card>
   )

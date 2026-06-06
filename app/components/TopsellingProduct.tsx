@@ -1,3 +1,4 @@
+import { useLoaderData } from "react-router";
 import {
   Card,
   CardContent,
@@ -6,6 +7,7 @@ import {
 } from "./ui/card";
 
 import { Progress } from "./ui/progress";
+import type { clientLoader } from "~/routes/home";
 
 const topProducts = [
   {
@@ -29,6 +31,7 @@ const topProducts = [
 ];
 
 export default function TopSellingProducts() {
+  const { topProducts } = useLoaderData<typeof clientLoader>();
   return (
     <Card className="">
       <CardHeader>
@@ -36,7 +39,7 @@ export default function TopSellingProducts() {
       </CardHeader>
 
       <CardContent className="space-y-6">
-        {topProducts.map((product) => (
+        {topProducts?.map((product:any) => (
           <div key={product.id}>
             <div className="mb-2 flex items-center justify-between">
               <div>

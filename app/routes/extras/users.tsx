@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   Card,
+  CardAction,
   CardContent,
   CardDescription,
   CardHeader,
@@ -38,6 +39,7 @@ import {
 import { Label } from "~/components/ui/label";
 
 import {
+  CogIcon,
   MoreHorizontal,
   Plus,
   Search,
@@ -57,6 +59,8 @@ import { toast } from "sonner";
 import { DeleteForm } from "~/components/DeleteForm";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { Checkbox } from "~/components/ui/checkbox";
+import { useUser } from "~/middleware/user";
+import { useRoles } from "~/middleware/permission";
 
 const users = [
   {
@@ -90,18 +94,56 @@ export async function clientAction({ request }: Route.ClientActionArgs) {
   const formData = await request.formData();
   const action = formData.get("action");
 
-  const { data, errors, message, status } = action == "delete" ? await apiRequest("DELETE", "/users/delete/" + formData.get("id")) : await apiRequest("POST", "/users/update/" + formData.get("id"), formData);
-  if (status === 200) {
-    toast.success(message);
+  if (action === "permissions") {
+    const { data, errors, message, status } = await apiRequest("POST", "/roles/permissions", formData);
+    if (status === 200) {
+      toast.success(message);
+    }
+    return { data, errors, status }
   }
-  return { data, errors, status }
+  if (action === "delete") {
+    const { data, errors, message, status } = await apiRequest("DELETE", "/users/delete/" + formData.get("id"));
+    if (status === 200) {
+      toast.success(message);
+    }
+    return { data, errors, status }
+  }
+  if (action === "update") {
+    const { data, errors, message, status } = await apiRequest("POST", "/users/update/" + formData.get("id"), formData);
+    if (status === 200) {
+      toast.success(message);
+    }
+    return { data, errors, status }
+  }
+  if (action === "new_role") {
+    const { data, errors, message, status } = await apiRequest("POST", "/roles/new_role", formData);
+    if (status === 200) {
+      toast.success(message);
+    }
+    return { data, errors, status }
+  }
+  if (action === "update_role") {
+    const { data, errors, message, status } = await apiRequest("POST", "/roles/update_role/" + formData.get("id"), formData);
+    if (status === 200) {
+      toast.success(message);
+    }
+    return { data, errors, status }
+  }
+  if (action === "delete_role") {
+    const { data, errors, message, status } = await apiRequest("DELETE", "/roles/delete/" + formData.get("id"));
+    if (status === 200) {
+      toast.success(message);
+    }
+    return { data, errors, status }
+  }
+  return { data: null, errors: null, status: 404 }
 }
 
 export default function UsersPage({ loaderData, actionData }: Route.ComponentProps) {
   const [search, setSearch] = useState("");
   const { users, stats, roles, permissions } = loaderData || { users: [], stats: {} };
   const { status, data, errors } = actionData || {};
-  const [activeItem, setActiveItem] = useState<{ action: "update" | "delete", user: { id: number, name: string, email: string, role_id: number, branch_id: number, email_verified_at: string } } | null>(null);
+  const [activeItem, setActiveItem] = useState<{ action: "update" | "delete" | "new_role" | "update_role" | "delete_role", user: { id: number, name: string, email: string, role_id: number, branch_id: number, email_verified_at: string }, role?: any } | null>(null);
   const filteredUsers = users?.filter((user: any) =>
     user.name.toLowerCase().includes(search.toLowerCase())
   );
@@ -110,6 +152,7 @@ export default function UsersPage({ loaderData, actionData }: Route.ComponentPro
       setActiveItem(null);
     }
   }, [status]);
+  const { is_myRole } = useRoles();
   return (
     <div className="space-y-6 p-6">
       <title>Users and roles - Pos</title>
@@ -172,12 +215,14 @@ export default function UsersPage({ loaderData, actionData }: Route.ComponentPro
                     onChange={(e) => setSearch(e.target.value)}
                   />
                 </div>
-                <Button asChild>
-                  <Link to={"/register"}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add User
-                  </Link>
-                </Button>
+                {is_myRole("manage_users") &&
+                  <Button asChild>
+                    <Link to={"/register"}>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add User
+                    </Link>
+                  </Button>
+                }
                 {/* <Dialog>
               <DialogTrigger asChild>
 
@@ -224,7 +269,9 @@ export default function UsersPage({ loaderData, actionData }: Route.ComponentPro
                     <TableHead>Role</TableHead>
                     <TableHead>Branch</TableHead>
                     <TableHead>Email</TableHead>
-                    <TableHead className="text-right">Action</TableHead>
+                    {is_myRole("manage_users") &&
+                      <TableHead className="text-right">Action</TableHead>
+                    }
                   </TableRow>
                 </TableHeader>
 
@@ -252,26 +299,27 @@ export default function UsersPage({ loaderData, actionData }: Route.ComponentPro
                       </TableCell>
 
                       <TableCell>{user.email}</TableCell>
+                      {is_myRole("manage_users") &&
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
 
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => setActiveItem({ action: "update", user })}>Edit</DropdownMenuItem>
-                            {/* <DropdownMenuItem>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => setActiveItem({ action: "update", user })}>Edit</DropdownMenuItem>
+                              {/* <DropdownMenuItem>
                           Reset Password
                         </DropdownMenuItem> */}
-                            <DropdownMenuItem onClick={() => setActiveItem({ action: "delete", user })} className="text-red-500">
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
+                              <DropdownMenuItem onClick={() => setActiveItem({ action: "delete", user })} className="text-red-500">
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      }
                     </TableRow>
                   ))}
                 </TableBody>
@@ -284,71 +332,118 @@ export default function UsersPage({ loaderData, actionData }: Route.ComponentPro
             <CardHeader>
               <CardTitle>Roles</CardTitle>
               <CardDescription>Manage user roles here.</CardDescription>
+              {is_myRole("manage_roles") &&
+                <CardAction>
+                  <Button onClick={() => setActiveItem({ action: "new_role", user: {} as any, role: null })}>
+                    Add Role
+                  </Button>
+                </CardAction>
+              }
             </CardHeader>
-            <CardContent className="space-y-4 grid md:grid-cols-3 lg:grid-cols-4">
+            <CardContent className="space-y-4 flex flex-wrap gap-6">
 
-              {roles?.map((role: any, index: number) => (
-                <div key={role.id}>
-                  <h6 className="text-primary text-xl">{index + 1}. {role.name}</h6>
-                  <ReusableForm<userPermissionForm> actionUrl={"/users"} defaults={{ role_id: role.id, permission_id: [] , action:"permissions" }}>
-                    {({ register, formState: { errors, isDirty }, watch, control }, { state }) => (
-                      <div className="space-y-4">
-                        {permissions?.map((permission: any) => (
-                          <Field>
-                            <div key={permission.id + role.name} className="flex gap-2 mt-2">
-                              <Controller
-                                name="permission_id"
-                                defaultValue={permission.id}
-                                control={control}
-                                rules={{ validate: (value) => value && value.length > 0 || "Permission is required!" }}
-                                render={({ field }) => {
-                                  const isChecked = field.value?.includes(permission.id);
+              {roles?.map((role: any, index: number) => {
+                const defaultPermId = role.permissions.map((perm: any) => perm?.pivot?.permission_id);
 
-                                  return (
-                                    <Checkbox
-                                      aria-invalid={errors.permission_id ? "true" : "false"}
-                                      defaultChecked={field.value == permission.id}
-                                      
-                                      onCheckedChange={(checked) => {
-                                        if (checked) {
-                                          field.onChange([...field.value, permission.id])
-                                        } else {
-                                          field.onChange(field.value.filter((id) => id !== permission.id))
-                                        }
-                                      }}
-                                       
-                                      id={permission.id + role.name}
-                                    // onCheckedChange={(e) => setRole(role.id, e.target.checked)}
-                                    />
-                                  )
-                                }
-                                } />
+                return (
+                  <Card key={role.id} className="min-w-50 p-2">
+                    <CardHeader>
+                      <h6 className="text-primary text-lg">{index + 1}. {role.name}</h6>
+                      {is_myRole("manage_roles") &&
+                        <CardAction>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button size={"icon-sm"}><CogIcon /></Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => setActiveItem({ action: "update_role", user: {} as any, role })}>Edit</DropdownMenuItem>
+                              {role.id > 4 &&
+                                <DropdownMenuItem onClick={() => setActiveItem({ action: "delete_role", user: {} as any, role })}>Delete</DropdownMenuItem>
+                              }
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </CardAction>
+                      }
+                    </CardHeader>
+                    <CardContent>
+                      <ReusableForm<userPermissionForm> key={role.id} actionUrl={"/users"} defaults={{ role_id: role.id, permission_id: defaultPermId, action: "permissions" }}>
+                        {({ register, formState: { errors, isDirty }, watch, control }, { state }) =>
+                        (
+                          <div className="space-y-4">
+                            {permissions?.map((permission: any) => {
+                              // const isChecked = role.permissions.find((perm: any) => perm.name === permission.name);
 
-                              <FieldLabel htmlFor={permission.id + role.name}>{permission.name}</FieldLabel>
-                            </div>
+                              return (
+                                <Field key={permission.id + role.name}>
+                                  <div className="flex gap-2 mt-2">
+                                    <Controller
+                                      name="permission_id"
+                                      defaultValue={permission.id}
+
+                                      control={control}
+                                      rules={{ validate: (value) => value && value.length > 0 || "Permission is required!" }}
+                                      render={({ field }) => {
+                                        //const isChecked = field.value?.includes(permission.id);
+
+                                        return (
+                                          <Checkbox
+                                            aria-invalid={errors.permission_id ? "true" : "false"}
+                                            defaultChecked={field.value?.includes(permission.id)}
+                                            onCheckedChange={(checked) => {
+                                              if (checked) {
+                                                field.onChange([...field.value, permission.id])
+                                              } else {
+                                                field.onChange(field.value.filter((id) => id !== permission.id))
+                                              }
+                                            }}
+
+                                            id={permission.id + role.name}
+                                          // onCheckedChange={(e) => setRole(role.id, e.target.checked)}
+                                          />
+                                        )
+                                      }
+                                      } />
+
+                                    <FieldLabel htmlFor={permission.id + role.name}>{permission.name}</FieldLabel>
+                                  </div>
+                                </Field>
+                              )
+                            }
+                            )}
+                            <input type="hidden" {...register("role_id")} />
+                            {/* {JSON.stringify(watch("permission_id"))} */}
+                            <input type="hidden" {...register("action")} />
                             {errors.permission_id && <FieldError>{errors.permission_id.message}</FieldError>}
-                          </Field>
-                        ))}
-                        <input type="hidden" {...register("role_id")} />
-                        {/* {JSON.stringify(watch("permission_id"))} */}
-                        <input type="hidden" {...register("action")} />
-                        <Button disabled={state != "idle" || !isDirty}>{state != "idle" ? "Processing..." : "Update Role"}</Button>
-                      </div>
-                    )}
-                  </ReusableForm>
-                </div>
-              ))}
+
+                            <Button disabled={state != "idle" || !isDirty}>{state != "idle" ? "Processing..." : "Update Role"}</Button>
+                          </div>
+                        )
+                        }
+                      </ReusableForm>
+                    </CardContent>
+
+                  </Card>
+                )
+              }
+              )}
               {/* {JSON.stringify(permissions)} */}
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
 
-      <AppModal title="Update user" open={!!activeItem} onClose={() => setActiveItem(null)}>
-        {activeItem?.action == "update" ?
-          <UpdateUserForm data={activeItem?.user} />
-          : <DeleteForm id={activeItem?.user?.id} itemName={"user"} path={"/users"} />
-        }
+      <AppModal title={() => {
+        if (activeItem?.action == "update") return "Update user";
+        if (activeItem?.action == "delete") return "Delete user";
+        if (activeItem?.action == "new_role") return "Add role";
+        if (activeItem?.action == "update_role") return "Update role";
+        if (activeItem?.action == "delete_role") return "Delete role";
+        return "";
+      }} open={activeItem?.action ? true : false} onClose={() => setActiveItem(null)}>
+        {activeItem?.action == "update" && <UpdateUserForm data={activeItem?.user} state={() => setActiveItem(null)} />}
+        {activeItem?.action == "delete" && <DeleteForm id={activeItem?.user?.id} itemName={"user"} path={"/users"} state={() => setActiveItem(null)} />}
+        {(activeItem?.action == "new_role" || activeItem?.action == "update_role") && <RoleForm data={activeItem?.role} state={() => setActiveItem(null)} />}
+        {(activeItem?.action == "delete_role") && <DeleteForm id={activeItem?.role?.id} itemName={"role"} path={"/users"} action={"delete_role"} state={() => setActiveItem(null)} />}
       </AppModal>
     </div>
   );
@@ -356,15 +451,15 @@ export default function UsersPage({ loaderData, actionData }: Route.ComponentPro
 type userPermissionForm = {
   role_id: number,
   permission_id: number[],
-  action: "permissions" ,
+  action: "permissions",
 }
 
 
-const UpdateUserForm = ({ data }: any) => {
+const UpdateUserForm = ({ data, state }: any) => {
   const { branches, roles } = useLoaderData<typeof clientLoader>();
 
   return (
-    <ReusableForm<UpdateUserFormInputs> actionUrl={"/users"} defaults={data}>
+    <ReusableForm<UpdateUserFormInputs> actionUrl={"/users"} defaults={data} resetOnSuccess={state}>
       {({ register, formState: { errors }, watch, control }, { state }) => (
         <FieldSet>
           <FieldGroup>
@@ -442,4 +537,33 @@ type UpdateUserFormInputs = {
   email: string,
   role_id: number,
   branch_id: number,
+}
+
+type RoleForm = {
+  id: number,
+  action: "update_role" | "new_role",
+  name: string,
+}
+const RoleForm = ({ data, state }: any) => {
+
+  return (
+    <ReusableForm<RoleForm> actionUrl={"/users"} defaults={data} resetOnSuccess={state}>
+      {({ register, formState: { errors }, watch, control }, { state }) => (
+        <FieldSet>
+          <FieldGroup>
+            <Field>
+              <FieldLabel>Role Name</FieldLabel>
+              <Input placeholder="Enter role name" aria-invalid={errors.name && "true"} {...register("name", { required: "Role name is required!" })} />
+              {errors.name && <FieldError>{errors.name.message}</FieldError>}
+            </Field>
+            <Field>
+              <input type="hidden" defaultValue={data?.id} {...register("id")} />
+              <input type="hidden" defaultValue={data?.id ? "update_role" : "new_role"} {...register("action")} />
+              <Button disabled={state != "idle"}>{state != "idle" ? "Processing..." : (data?.id ? "Update role" : "Add role")}</Button>
+            </Field>
+          </FieldGroup>
+        </FieldSet>
+      )}
+    </ReusableForm>
+  )
 }

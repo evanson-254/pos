@@ -22,7 +22,7 @@ import {
 import { useEffect, useState } from "react";
 import AppModal from "~/components/appmodal";
 import { ReusableForm } from "~/components/FetcherForm";
-import { Field,  FieldError, FieldGroup, FieldLabel, FieldSet } from "~/components/ui/field";
+import { Field, FieldError, FieldGroup, FieldLabel, FieldSet } from "~/components/ui/field";
 import { Input } from "~/components/ui/input";
 import { Controller } from "react-hook-form";
 import { Switch } from "~/components/ui/switch";
@@ -31,8 +31,9 @@ import { toast } from "sonner";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "~/components/ui/dropdown-menu";
 import type { Route } from "./+types/branch";
 import { useActionData, useLoaderData, useNavigate, useParams } from "react-router";
-import {  DeleteForm } from "~/components/DeleteForm";
-
+import { DeleteForm } from "~/components/DeleteForm";
+import { useRoles } from "~/middleware/permission";
+import { useAppData } from "~/middleware/user";
 
 
 type BranchProps = {
@@ -92,8 +93,14 @@ export async function clientAction({ request, params }: Route.ClientActionArgs) 
 
   const formData = await request.formData();
   const action = formData.get("action");
-
-  const { data, errors, message, status } = action=="delete"? await apiRequest("DELETE", "/branch/delete/"+ formData.get("id")):await apiRequest("POST", params.id ? "/branch/update/" + params.id : "/branch/new", formData);
+  if (action == "switch") {
+    const { data, errors, message, status } = await apiRequest("POST", "/branch/switch/" + formData.get("id"));
+    if (status === 200) {
+      toast.success(message);
+    }
+    return { data, errors, status }
+  }
+  const { data, errors, message, status } = action == "delete" ? await apiRequest("DELETE", "/branch/delete/" + formData.get("id")) : await apiRequest("POST", params.id ? "/branch/update/" + params.id : "/branch/new", formData);
   if (status === 200) {
     toast.success(message);
   }
@@ -111,8 +118,9 @@ export default function BranchesPage({ }: Route.ComponentProps) {
   //const { branches, stats } = loaderData || {};
   const { branches, stats } = useLoaderData<typeof clientLoader>();
   const actionData = useActionData<typeof clientAction>();
-  const [action, setAction] = useState<"delete" | "store">("store");
+  const [action, setAction] = useState<"delete" | "store" | "switch">("store");
   const param = useParams();
+  const {branch:mainBranch} = useAppData();
 
   const navigate = useNavigate();
   useEffect(() => {
@@ -120,6 +128,7 @@ export default function BranchesPage({ }: Route.ComponentProps) {
       setActiveItem(null);
     }
   }, [actionData]);
+  const { is_myRole, user } = useRoles();
 
   return (
     <div className="space-y-6 p-4">
@@ -130,19 +139,22 @@ export default function BranchesPage({ }: Route.ComponentProps) {
 
           <CardTitle className="text-3xl font-bold tracking-tight">
             Branch Management
+            {/* {JSON.stringify(user)} */}
+            {/* {branch?.name} */}
           </CardTitle>
           <CardDescription className="text-muted-foreground">
             Manage all POS branches and monitor performance.
           </CardDescription>
-
-          <CardAction>
-            <Button className="w-full md:w-auto" onClick={() => {setAction("store"); setActiveItem(true); param?.id && navigate("/branch") }}>
-              <Building2 className="mr-2 h-4 w-4" />
-              Add New Branch
-            </Button>
-          </CardAction>
+          {is_myRole("manage_branches") &&
+            <CardAction>
+              <Button className="w-full md:w-auto" onClick={() => { setAction("store"); setActiveItem(true); param?.id && navigate("/branch") }}>
+                <Building2 className="mr-2 h-4 w-4" />
+                Add New Branch
+              </Button>
+            </CardAction>
+          }
         </CardHeader>
-
+{/* {JSON.stringify(stats?.branch)} */}
         <CardContent className="space-y-6">
           {/* Stats */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -152,6 +164,7 @@ export default function BranchesPage({ }: Route.ComponentProps) {
                   <p className="text-sm text-muted-foreground">Total Branches</p>
                   <h2 className="text-3xl font-bold">{stats?.total}</h2>
                 </div>
+                {/*  */}
 
                 <Building2 className="h-10 w-10 text-primary" />
               </CardContent>
@@ -172,7 +185,7 @@ export default function BranchesPage({ }: Route.ComponentProps) {
               <CardContent className="flex items-center justify-between p-6">
                 <div>
                   <p className="text-sm text-muted-foreground">Total Staff</p>
-                  <h2 className="text-3xl font-bold">31</h2>
+                  <h2 className="text-3xl font-bold">{stats?.staff}</h2>
                 </div>
 
                 <Users className="h-10 w-10 text-primary" />
@@ -205,6 +218,7 @@ export default function BranchesPage({ }: Route.ComponentProps) {
                         {branch.name}
                       </CardTitle>
 
+
                       <CardDescription className="mt-1 flex items-center gap-2">
                         <MapPin className="h-4 w-4" />
                         {branch.address}
@@ -213,24 +227,24 @@ export default function BranchesPage({ }: Route.ComponentProps) {
 
                     <Badge
                       variant={
-                        branch.status === "Active"
+                        branch.is_active === 1
                           ? "default"
-                          : branch.status === "Low Stock"
+                          : branch.is_active === 1
                             ? "secondary"
                             : "destructive"
                       }
                     >
-                      {branch.status}
+                      {branch.is_active == 1 ? "Active" : "Inactive"}
                     </Badge>
                   </div>
                 </CardHeader>
 
                 <CardContent className="space-y-5">
                   <div className="space-y-3 text-sm">
-                    <div className="flex items-center justify-between">
+                    {/* <div className="flex items-center justify-between">
                       <span className="text-muted-foreground">Manager</span>
                       <span className="font-medium">{branch.manager}</span>
-                    </div>
+                    </div> */}
 
                     <div className="flex items-center justify-between">
                       <span className="text-muted-foreground">Phone</span>
@@ -243,7 +257,7 @@ export default function BranchesPage({ }: Route.ComponentProps) {
 
                     <div className="flex items-center justify-between">
                       <span className="text-muted-foreground">Staff</span>
-                      <span className="font-medium">{branch.staff}</span>
+                      <span className="font-medium">{branch.users?.length}</span>
                     </div>
 
                     <div className="flex items-center justify-between">
@@ -255,21 +269,22 @@ export default function BranchesPage({ }: Route.ComponentProps) {
                   </div>
 
                   <div className="flex gap-3">
-                    <Button className="flex-1">
-                      View Branch
+                    <Button disabled={branch?.id== mainBranch?.id} className="flex-1" onClick={() => { setAction("switch"); setActiveItem(branch) }}>
+                  {branch?.id== mainBranch?.id ? "Current Branch" : "Switch Branch"}
                     </Button>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="icon">
-                          <ArrowRight className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => {setActiveItem(branch);setAction("store")}}>Edit</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => {setActiveItem(branch);setAction("delete")}} >Delete</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-
+                    {is_myRole("manage_branches") &&
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" size="icon">
+                            <ArrowRight className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => { setActiveItem(branch); setAction("store") }}>Edit</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => { setActiveItem(branch); setAction("delete") }} >Delete</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    }
                   </div>
                 </CardContent>
               </Card>
@@ -277,12 +292,13 @@ export default function BranchesPage({ }: Route.ComponentProps) {
           </div>
         </CardContent>
       </Card>
-      <AppModal title={activeItem == true ? "Add New Branch" : (activeItem?.name || "")} description="Fill in the form below to update branches" open={!!activeItem} onClose={() => setActiveItem(null)}>
-        {action == "delete" ?
-          <DeleteForm id={activeItem&&activeItem!=true && activeItem?.id} itemName={"branch"} path={"/branch"}/> :
-          <BranchForm data={activeItem} />
-        }
-      </AppModal>
+      {is_myRole("manage_branches") &&
+        <AppModal title={activeItem == true ? "Add New Branch" : (activeItem?.name || "")} description="Fill in the form below to update branches" open={!!activeItem} onClose={() => setActiveItem(null)}>
+          {action == "delete" && <DeleteForm state={() => setActiveItem(null)} id={activeItem && activeItem != true && activeItem?.id} itemName={"branch"} path={"/branch"} />}
+          {action == "store" && <BranchForm state={() => setActiveItem(null)} data={activeItem} />}
+          {action == "switch" && <SwitchBranchForm state={() => setActiveItem(null)} data={activeItem} />}
+        </AppModal>
+      }
 
     </div>
   );
@@ -296,9 +312,9 @@ interface BranchFormInputs {
   is_active: boolean,
 }
 
-const BranchForm = ({ data }: any) => {
+const BranchForm = ({ data, state }: any) => {
   return (
-    <ReusableForm<BranchFormInputs> actionUrl={data?.id ? ("/branch/" + data.id) : "/branch"} defaults={data}>
+    <ReusableForm<BranchFormInputs> actionUrl={data?.id ? ("/branch/" + data.id) : "/branch"} defaults={data} resetOnSuccess={state}>
       {({ register, formState: { errors }, watch, control }, { state }) => (
         <FieldSet >
           <FieldGroup>
@@ -331,7 +347,7 @@ const BranchForm = ({ data }: any) => {
                   name="is_active"
                   control={control}
 
-                 // rules={{ required: "Branch status is required!" }}
+                  // rules={{ required: "Branch status is required!" }}
                   render={({ field }) =>
                     <Switch aria-invalid={errors.is_active && "true"} defaultChecked={field.value} onCheckedChange={(e) => { field.onChange(e.valueOf()) }} />
                   }
@@ -350,4 +366,23 @@ const BranchForm = ({ data }: any) => {
   )
 }
 
+interface SwitchBranchFormInputs {
+  id: number,
+  action: string
+}
+
+const SwitchBranchForm = ({ data, state }: any) => {
+  return (
+    <ReusableForm<SwitchBranchFormInputs> actionUrl={data?.id ? ("/branch/" + data.id) : "/branch"} defaults={data} resetOnSuccess={state}>
+      {({ register, formState: { errors }, watch, control }, { state }) => (
+        <div className=" flex flex-col gap-4">
+          <p className="text-sm text-muted-foreground">Switch to {data?.name}</p>
+          <input type="hidden" {...register("id")} />
+          <input type="hidden" defaultValue={"switch"} {...register("action")} />
+          <Button disabled={state != "idle"}>{state != "idle" ? "Processing" : ("Switch Branch")}</Button>
+        </div>
+      )}
+    </ReusableForm>
+  )
+}
 

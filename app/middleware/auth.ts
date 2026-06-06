@@ -1,14 +1,24 @@
 import { createContext, redirect } from "react-router"
 import { apiRequest } from "~/services/apiRequest";
+import { pathsToPermissions, requirePermission } from "./permission";
 //mport type { Route } from "../+types/root";
 
-export async function AuthMiddleware({ context }: { context: any }, next: any) {
-    const { data } = await apiRequest("GET", "/user");
+export async function AuthMiddleware({ context, request }: { context: any, request:any }, next: any) {
+    const { data } = await apiRequest("GET", "/appdata");
 
     if (!data) {
         throw redirect("/login");
     }
-    context.set(userContext, data);
+    const url = new URL(request.url);
+    const user = data?.user;
+    const pathname = url.pathname;
+
+    const permissionRequired = pathsToPermissions?.[pathname];
+    ///5655console.log(data?.permissions?.map((user:any)=> user.name), permissionRequired);
+    if (permissionRequired) {
+        requirePermission( user?.permissions, permissionRequired);
+    }
+    context.set(appDataContext, data);
     return await  next();
 }
 
@@ -21,7 +31,9 @@ export interface User {
     account: string,
     profile: string,
     created_at: string,
+    permissons: string[],
 }
 
 
-export const userContext = createContext<User | null>(null);
+export const userContext = createContext<User>({} as User);
+export const appDataContext = createContext<{ user: User, branch: any }>({ user: {} as User, branch: {} as any });

@@ -12,6 +12,8 @@ import {
   CardHeader,
   CardTitle,
 } from "./ui/card";
+import { useLoaderData } from "react-router";
+import type { clientLoader } from "~/routes/home";
 
 const data = [
   { name: "Beverages", value: 400 },
@@ -28,6 +30,7 @@ const COLORS = [
 ];
 
 export default function SalesByCategory() {
+  const { saleByCategory:data } = useLoaderData<typeof clientLoader>();
   return (
     <Card className="">
       <CardHeader>
@@ -47,7 +50,7 @@ export default function SalesByCategory() {
                 outerRadius={100}
                 label
               >
-                {data.map((_, index) => (
+                {data?.map((_: any, index: number) => (
                   <Cell
                     key={index}
                     fill={COLORS[index]}

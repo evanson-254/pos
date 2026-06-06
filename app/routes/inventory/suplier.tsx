@@ -19,6 +19,7 @@ import { Input } from "~/components/ui/input";
 import { apiRequest } from "~/services/apiRequest";
 import type { Route } from "./+types/suplier";
 import { toast } from "sonner";
+import { useRoles } from "~/middleware/permission";
 interface SupplierProps {
     id: number,
     name: string,
@@ -72,6 +73,7 @@ export default function SuppliersPage({ loaderData, actionData }: Route.Componen
         }
 
     }, [actionData]);
+    const { is_myRole } = useRoles();
     return (
         <div className="space-y-6 px-4 my-4">
             <title>Suppliers - POS</title>
@@ -82,13 +84,14 @@ export default function SuppliersPage({ loaderData, actionData }: Route.Componen
                     <CardDescription className="text-muted-foreground">
                         Manage inventory suppliers
                     </CardDescription>
-
+                    {is_myRole("manage_suppliers") &&
                     <CardAction>
                         <Button onClick={()=>setActiveItem({action:"new", supplier:null})} className="w-full md:w-auto">
                             <Plus className="mr-2 h-4 w-4" />
                             Add Supplier
                         </Button>
                     </CardAction>
+                    }
                 </CardHeader>
                 <CardContent>
                     {/* table */}
@@ -100,7 +103,9 @@ export default function SuppliersPage({ loaderData, actionData }: Route.Componen
                                     <TableHead>Phone</TableHead>
                                     <TableHead>Email</TableHead>
                                     <TableHead>Products</TableHead>
+                                    {is_myRole("manage_suppliers") &&
                                     <TableHead>Actions</TableHead>
+                                    }
                                 </TableRow>
                             </TableHeader>
 
@@ -114,7 +119,7 @@ export default function SuppliersPage({ loaderData, actionData }: Route.Componen
                                         <TableCell>{supplier.email}</TableCell>
 
                                         <TableCell>{supplier.products}</TableCell>
-
+                                        {is_myRole("manage_suppliers") &&
                                         <TableCell>
                                             <div className="flex gap-2">
                                                 <Button size="sm" variant="outline">
@@ -129,6 +134,7 @@ export default function SuppliersPage({ loaderData, actionData }: Route.Componen
                                                 </Button>
                                             </div>
                                         </TableCell>
+                        }
                                     </TableRow>
                                 ))}
                             </TableBody>
@@ -136,11 +142,13 @@ export default function SuppliersPage({ loaderData, actionData }: Route.Componen
                     </div>
                 </CardContent>
             </Card>
+            {is_myRole("manage_suppliers") &&
             <AppModal title={activeItem?.action=="new"?"Add Supplier":(activeItem?.supplier?.name||"")} description="Fill in the form below to update branches" open={!!activeItem} onClose={() => setActiveItem(null)}>
-                {activeItem?.action=="new" &&      <SupplierForm />}
-                {activeItem?.action=="update" &&   <SupplierForm data={activeItem?.supplier} />}
-                {activeItem?.action=="delete" &&   <DeleteForm id={activeItem?.supplier?.id} itemName={"supplier"} path={"/supplier"}/>}
+                {activeItem?.action=="new" &&      <SupplierForm state={() => setActiveItem(null)} />}
+                {activeItem?.action=="update" &&   <SupplierForm state={() => setActiveItem(null)} data={activeItem?.supplier} />}
+                {activeItem?.action=="delete" &&   <DeleteForm state={() => setActiveItem(null)} id={activeItem?.supplier?.id} itemName={"supplier"} path={"/supplier"}/>}
             </AppModal>
+            }
         </div>
     );
 }
@@ -152,9 +160,9 @@ type SupplierFormProps = {
     email: string,
     address: number,
 }
-const SupplierForm = ({ data }: { data?: SupplierProps | null }) => {
+const SupplierForm = ({ data, state }: { data?: SupplierProps | null , state?:any}) => {
     return (
-       <ReusableForm<SupplierFormProps> actionUrl={"/supplier"} defaults={data}>
+       <ReusableForm<SupplierFormProps> actionUrl={"/supplier"} defaults={data} resetOnSuccess={state}>
            {({ register, formState: { errors }, watch, control }, { state }) => (
             <FieldSet>
                 <FieldGroup>

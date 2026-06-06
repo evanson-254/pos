@@ -1,9 +1,11 @@
+import { useLoaderData } from "react-router";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
 } from "./ui/card";
+import type { clientLoader } from "~/routes/home";
 
 const cashiers = [
   {
@@ -27,6 +29,7 @@ const cashiers = [
 ];
 
 export default function CashierActivity() {
+  const { cashierActivity:cashiers } = useLoaderData<typeof clientLoader>();
   return (
     <Card className="">
       <CardHeader>
@@ -34,7 +37,7 @@ export default function CashierActivity() {
       </CardHeader>
 
       <CardContent className="space-y-5">
-        {cashiers.map((cashier) => (
+        {cashiers?.map((cashier:any) => (
           <div
             key={cashier.id}
             className="flex items-center justify-between border-b pb-4"

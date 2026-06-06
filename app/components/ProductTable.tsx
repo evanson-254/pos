@@ -206,7 +206,7 @@ export const products: Product[] = [
     },
 ];
 
-export default function ProductTable() {
-    return <DataTable columns={productsColumn} data={products} />
+export default function ProductTable({products, deleteAct}:{products:Product[], deleteAct?:any}) {
+    return <DataTable columns={productsColumn({delAct:deleteAct})} data={products} deleteAct={deleteAct} />
 
 }

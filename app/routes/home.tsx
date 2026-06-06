@@ -18,7 +18,6 @@ import QuickActions from "~/components/QuicAction";
 
 
 
-
 export async function clientAction({ request }: Route.ClientActionArgs) {
   const formData = await request.formData();
   const { data, errors, message, status } = await apiRequest("POST", "/logout", formData);
@@ -30,8 +29,17 @@ export async function clientAction({ request }: Route.ClientActionArgs) {
 }
 
 export async function clientLoader({ context }: Route.ClientLoaderArgs) {
-  const user = context.get(userContext);
-  return { user };
+  const { data } = await apiRequest("GET", "/dashboard");
+  return {
+    stats: data?.stats,
+    sale_chart: data?.sale_chart,
+    lowStockItems: data?.lowStockItems,
+    topProducts: data?.topProducts,
+    saleByCategory: data?.saleByCategory,
+    cashierActivity: data?.cashierActivity,
+    paymentAnalytics: data?.paymentAnalytics,
+    latestSales: data?.latestSales,
+  }
 }
 
 
@@ -51,19 +59,19 @@ export default function Home({ loaderData }: Route.ComponentProps) {
           <LowStockAlert />
         </div>
         <div className="grid gap-6 lg:grid-cols-2">
-          <TopSellingProducts/>
-          <SalesByCategory/>
+          <TopSellingProducts />
+          <SalesByCategory />
         </div>
         <div className="grid gap-6 lg:grid-cols-2">
-          <PaymentAnalytics/>
-          <CashierActivity/>
+          <PaymentAnalytics />
+          <CashierActivity />
         </div>
         <div className="grid gap-6 lg:grid-cols-3">
-          <QuickActions/>
+          <QuickActions />
           <div className="lg:col-span-2">
             <DashboardTable />
           </div>
-        </div>        
+        </div>
       </section>
     </>
   )

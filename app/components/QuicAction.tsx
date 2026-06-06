@@ -31,9 +31,11 @@ export default function QuickActions() {
           
         </Button>
 
-        <Button className="h-20 justify-start gap-3">
-          <Plus />
-          Add Product
+        <Button className="h-20 justify-start gap-3" asChild>
+          <Link to={"/product/update/new"}>
+            <Plus />
+            Add Product
+          </Link>
         </Button>
 
         <Button className="h-20 justify-start gap-3">
@@ -41,9 +43,11 @@ export default function QuickActions() {
           Generate Report
         </Button>
 
-        <Button className="h-20 justify-start gap-3">
-          <Users />
-          Customers
+        <Button className="h-20 justify-start gap-3" asChild>
+          <Link to={"/users"}>
+            <Users />
+            Users Management
+          </Link>
         </Button>
       </CardContent>
     </Card>

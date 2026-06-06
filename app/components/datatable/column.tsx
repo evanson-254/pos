@@ -1,4 +1,4 @@
-import { ArrowDownAZ, ArrowDownUp, ArrowUpAZ, ArrowUpDown, CheckCircle2, Download, Eye, MoreHorizontal, MoreVertical, XCircle } from "lucide-react";
+import { ArrowDownAZ, ArrowDownUp, ArrowUpAZ, ArrowUpDown, CheckCircle2, Download, Eye, MoreHorizontal, MoreVertical, PenBoxIcon, Trash, XCircle } from "lucide-react";
 import { Button } from "../ui/button";
 import { Checkbox } from "../ui/checkbox"
 import { type Column, type ColumnDef, type Table } from "@tanstack/react-table";
@@ -8,6 +8,7 @@ import { Badge } from "../ui/badge";
 import { cn } from "~/lib/utils";
 import type { Refunds } from "../refundTable";
 import type { Product } from "../ProductTable";
+import { Link } from "react-router";
 
 
 
@@ -17,7 +18,7 @@ export type Payment = {
   id: string
   amount: number
   status: "pending" | "processing" | "success" | "failed"
-  email: string
+  cashier: string
 }
 
 export const columns: ColumnDef<Payment>[] = [
@@ -58,19 +59,19 @@ export const columns: ColumnDef<Payment>[] = [
     ),
   },
   {
-    accessorKey: "email",
+    accessorKey: "cashier",
     header: ({ column }) => {
       return (
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
-          Email
+          Cashier
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       )
     },
-    cell: ({ row }) => <div className="lowercase">{row.getValue("email")}</div>,
+    cell: ({ row }) => <div className="lowercase">{row.getValue("cashier")}</div>,
   },
   {
     accessorKey: "amount",
@@ -89,7 +90,7 @@ export const columns: ColumnDef<Payment>[] = [
       const amount = parseFloat(row.getValue("amount"))
       const formatted = new Intl.NumberFormat("en-US", {
         style: "currency",
-        currency: "USD",
+        currency: "KES",
       }).format(amount)
 
       return <div className="text- font-medium">{formatted}</div>
@@ -132,7 +133,7 @@ function SortButton<T>({ column, colname }: { column: Column<T>, colname: string
     </span>
   )
 }
-export const salesColumn: ColumnDef<sales>[] = [
+export const salesColumn = ({ displayReceipt }: { displayReceipt: any }): ColumnDef<sales>[] => [
   {
     id: "select",
 
@@ -155,13 +156,13 @@ export const salesColumn: ColumnDef<sales>[] = [
   },
 
   {
-    accessorKey: "id",
+    accessorKey: "invoice_code",
     header: ({ column }) => <SortButton colname="Invoice" column={column} />,
-    cell: ({ row }) => <span className="font-medium">{row.getValue("id")}</span>
+    cell: ({ row }) => <span className="font-medium">{row.getValue("invoice_code")}</span>
   },
   {
-    accessorKey: "customer",
-    header: ({ column }) => <SortButton colname="Customer" column={column} />,
+    accessorKey: "cashier",
+    header: ({ column }) => <SortButton colname="Cashier" column={column} />,
   },
   {
     accessorKey: "date",
@@ -213,7 +214,7 @@ export const salesColumn: ColumnDef<sales>[] = [
 
   },
   {
-    id: "action",
+    accessorKey: "sale",
     header: () => <div className="text-right">Action</div>,
     cell: ({ row }) => {
       return (
@@ -230,9 +231,14 @@ export const salesColumn: ColumnDef<sales>[] = [
             </DropdownMenuTrigger>
 
             <DropdownMenuContent align="end">
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={() => displayReceipt(row.getValue("sale"))}>
                 <Eye className="mr-2 h-4 w-4" />
                 View Receipt
+                <div className="overflow-auto">
+                  {/* {JSON.stringify(row.original)} */}
+                </div>
+
+
               </DropdownMenuItem>
 
               <DropdownMenuItem>
@@ -250,7 +256,7 @@ export const salesColumn: ColumnDef<sales>[] = [
 
 ];
 
-export const refundColumn: ColumnDef<Refunds>[] = [
+export const refundColumn = ({ actions }: { actions: any }): ColumnDef<Refunds>[] => [
   {
     id: "select",
     header: ({ table }) => (
@@ -281,7 +287,7 @@ export const refundColumn: ColumnDef<Refunds>[] = [
   },
   {
     accessorKey: "customer",
-    header: ({ column }) => <SortButton colname="Customer" column={column} />,
+    header: ({ column }) => <SortButton colname="Initiator" column={column} />,
   },
   {
     accessorKey: "amount",
@@ -305,17 +311,17 @@ export const refundColumn: ColumnDef<Refunds>[] = [
         <Badge
           variant="outline"
           className={`
-                          ${status === "Approved"
+                          ${status === "approved"
               ? "border-green-500 text-green-600"
               : ""
             }
 
-                          ${status === "Pending"
+                          ${status === "pending"
               ? "border-yellow-500 text-yellow-600"
               : ""
             }
 
-                          ${status === "Rejected"
+                          ${status === "rejected"
               ? "border-red-500 text-red-600"
               : ""
             }
@@ -335,19 +341,25 @@ export const refundColumn: ColumnDef<Refunds>[] = [
       return (
         <div className="text-right">
           <div className="flex justify-end gap-2">
+            {/* {typeof actions} */}
             <Button
               size="icon"
               variant="outline"
+              asChild
               className="rounded-xl"
             >
-              <Eye className="h-4 w-4" />
+              <Link to={"/sales-history?invoice=" + row.getValue("invoice")}>
+                <Eye className="h-4 w-4" />
+              </Link>
             </Button>
 
-            {status === "Pending" && (
+            {status === "pending" && (
               <>
                 <Button
                   size="icon"
-                  className="rounded-xl"
+                  className=""
+                  title="Approve"
+                  onClick={() => actions().approve(row.original)}
                 >
                   <CheckCircle2 className="h-4 w-4" />
                 </Button>
@@ -355,7 +367,9 @@ export const refundColumn: ColumnDef<Refunds>[] = [
                 <Button
                   size="icon"
                   variant="destructive"
-                  className="rounded-xl"
+                  className=""
+                  title="Reject"
+                  onClick={() => actions().reject(row.original)}
                 >
                   <XCircle className="h-4 w-4" />
                 </Button>
@@ -370,7 +384,7 @@ export const refundColumn: ColumnDef<Refunds>[] = [
 
 ];
 
-export const productsColumn: ColumnDef<Product>[] = [
+export const productsColumn = ({ delAct }: { delAct?: any }): ColumnDef<Product>[] => [
   {
     id: "select",
     header: ({ table }) => (
@@ -395,7 +409,7 @@ export const productsColumn: ColumnDef<Product>[] = [
     header: ({ column }) => <SortButton colname="Image" column={column} />,
     cell: ({ row }) => (
       <div className="h-10 w-10">
-        <img src="/logo.png" alt="logo" className="h-full w-auto object-cover" />
+        <img src={row.getValue("image") ?? "/logo.png"} alt="logo" className="h-full w-auto object-cover" />
       </div>
     )
   },
@@ -404,16 +418,22 @@ export const productsColumn: ColumnDef<Product>[] = [
     header: ({ column }) => <SortButton colname="Name" column={column} />,
   },
   {
-    accessorKey: "cost_price",
-    header: ({ column }) => <SortButton colname="cost price" column={column} />,
+    accessorKey: "price",
+    header: ({ column }) => <SortButton colname="branch price" column={column} />,
+    cell: ({ row }) => row.getValue("price") ?? row.getValue("selling_price")
+
   },
   {
     accessorKey: "selling_price",
-    header: ({ column }) => <SortButton colname="selling price" column={column} />,
+    header: ({ column }) => <SortButton colname="gen price" column={column} />,
   },
   {
-    accessorKey: "stock_quantity",
+    accessorKey: "quantity",
     header: ({ column }) => <SortButton colname="Stock" column={column} />,
+  },
+  {
+    accessorKey: "branch",
+    header: ({ column }) => <SortButton colname="Branch" column={column} />,
   },
   {
     accessorKey: "updated_at",
@@ -422,13 +442,13 @@ export const productsColumn: ColumnDef<Product>[] = [
 
 
   {
-    accessorKey: "category_id",
+    accessorKey: "category",
     header: ({ column }) => <SortButton colname="Category" column={column} />,
   },
-  {
-    accessorKey: "brand_id",
-    header: ({ column }) => <SortButton colname="Brand" column={column} />,
-  },
+  // {
+  //   accessorKey: "brand_id",
+  //   header: ({ column }) => <SortButton colname="Brand" column={column} />,
+  // },
   {
     accessorKey: "sku",
     header: ({ column }) => <SortButton colname="SKU" column={column} />,
@@ -438,10 +458,10 @@ export const productsColumn: ColumnDef<Product>[] = [
     accessorKey: "barcode",
     header: ({ column }) => <SortButton colname="Barcode" column={column} />,
   },
-  {
-    accessorKey: "supplier_id",
-    header: ({ column }) => <SortButton colname="suplier" column={column} />,
-  },
+  // {
+  //   accessorKey: "supplier_id",
+  //   header: ({ column }) => <SortButton colname="suplier" column={column} />,
+  // },
   {
     accessorKey: "status",
     header: ({ column }) => <SortButton colname="Status" column={column} />,
@@ -454,7 +474,7 @@ export const productsColumn: ColumnDef<Product>[] = [
           className={
 
             cn(
-              
+
               variant == "success" && "border-green-500 text-green-600",
               variant == "danger" && "border-red-500 text-red-600",
               variant == "warning" && "border-yellow-500 text-yellow-600",
@@ -467,7 +487,8 @@ export const productsColumn: ColumnDef<Product>[] = [
     }
   },
   {
-    id: "action",
+
+    accessorKey: "id",
     header: () => <div className="text-right">Action</div>,
     cell: ({ row }) => {
       const status: string = row.getValue("status");
@@ -484,13 +505,19 @@ export const productsColumn: ColumnDef<Product>[] = [
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem>
-                <Eye className="mr-2 h-4 w-4" />
-                View Receipt
+              <DropdownMenuItem asChild>
+                <Link to={"/product/update/" + row.getValue("id")}>
+                  <PenBoxIcon className="mr-2 h-4 w-4" />
+                  Update
+                </Link>
+
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Download className="mr-2 h-4 w-4" />
-                Download
+              <DropdownMenuItem onClick={() => delAct(row.getValue("id"))} >
+
+                <Trash className="mr-2 h-4 w-4" />
+                Delete
+
+
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

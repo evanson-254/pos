@@ -1,6 +1,8 @@
+import { useLoaderData } from "react-router";
 import { refundColumn } from "./datatable/column";
 import { DataTable } from "./datatable/table";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "./ui/card";
+import type { clientLoader } from "~/routes/pos/refunds";
 
 export type Refunds = {
     id: string,
@@ -43,7 +45,8 @@ const refunds = [
 ];
 
 
-export default function RefundTable(){
+export default function RefundTable({actions}:{actions:any}) {
+    const { refunds } = useLoaderData<typeof clientLoader>();
     return(
         <Card className="">
             <CardHeader>
@@ -51,7 +54,7 @@ export default function RefundTable(){
                 <CardDescription>View and manage refund history</CardDescription>
             </CardHeader>
             <CardContent>
-                <DataTable columns={refundColumn} data={refunds}/>
+                <DataTable columns={refundColumn({actions})} data={refunds} />
             </CardContent>
         </Card>
     )

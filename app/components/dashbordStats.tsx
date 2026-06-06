@@ -1,7 +1,9 @@
+import { useLoaderData } from "react-router";
 import {
   Card,
   CardContent,
 } from "./ui/card";
+import type { clientLoader } from "~/routes/home";
 
 const stats = [
   {
@@ -23,12 +25,13 @@ const stats = [
 ];
 
 export default function DashboardStats() {
+  const { stats } = useLoaderData<typeof clientLoader>();
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-      {stats.map((stat) => (
+      {stats?.map((stat:any) => (
         <Card
           key={stat.title}
-          className=""
+          className="p-2"
         >
           <CardContent className="p-6">
             <p className="text-sm text-muted-foreground">

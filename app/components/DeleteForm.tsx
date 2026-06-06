@@ -9,9 +9,9 @@ type DeleteBranchFormInputs = {
   consent: boolean,
   action: "delete" | "restore",
 }
-export const DeleteForm = ({ id, itemName, path }: {id:any, itemName:any, path:any}) => {
+export const DeleteForm = ({ id, itemName, path, action ="delete", state }: {id:any, itemName:any, path:any, action?:any, state?:any}) => {
   return (
-    <ReusableForm<DeleteBranchFormInputs> actionUrl={path} >
+    <ReusableForm<DeleteBranchFormInputs> actionUrl={path} resetOnSuccess={state}>
       {({ register,formState:{errors},control }, { state }) => (
         <FieldSet>
           <FieldError className="te">This action canot be undone! Are you sure you want to delete this {itemName}?</FieldError>
@@ -30,7 +30,7 @@ export const DeleteForm = ({ id, itemName, path }: {id:any, itemName:any, path:a
               </div>
               {errors.consent && <FieldError>{errors.consent.message}</FieldError>}
               <input type="hidden" defaultValue={id} {...register("id")} />
-              <input type="hidden" defaultValue={"delete"} {...register("action")} />
+              <input type="hidden" defaultValue={action||"delete"} {...register("action")} />
             </Field>
             <Field>
               <Button disabled={state != "idle"}>{state != "idle" ? "Processing" : "Delete "+itemName}</Button>

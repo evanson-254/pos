@@ -14,7 +14,7 @@ export default function SaleProductDisplay({ filteredProducts, addToCart }: Sale
 
     return (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {filteredProducts.map((product) => (
+            {filteredProducts?.map((product) => (
                 // <Card
                 //     key={product.id}
                 //     className="cursor-pointer  transition hover:shadow-lg"
@@ -73,10 +73,10 @@ export default function SaleProductDisplay({ filteredProducts, addToCart }: Sale
                         {/* STOCK */}
                         <div className="absolute right-3 top-3">
                             <Badge
-                                variant={product.stock <= 5 ? "destructive" : "secondary"}
+                                variant={product.quantity <= 5 ? "destructive" : "secondary"}
                                 className="backdrop-blur-sm"
                             >
-                                {product.stock} Left
+                                {product.quantity} Left
                             </Badge>
                         </div>
                     </div>

@@ -1,9 +1,9 @@
 import * as React from "react"
 import {
- type ColumnDef,
- type ColumnFiltersState,
- type   SortingState,
- type  VisibilityState,
+  type ColumnDef,
+  type ColumnFiltersState,
+  type SortingState,
+  type VisibilityState,
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
@@ -11,24 +11,28 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table"
-import { ChevronDown } from "lucide-react"
+import { ChevronDown, Trash } from "lucide-react"
 
 import { Button } from "../ui/button"
 import { DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenu } from "../ui/dropdown-menu"
 import { Input } from "../ui/input"
-import {Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "../ui/table"
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "../ui/table"
 
 
 
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
-  data: TData[]
+  data: TData[],
+  deleteAct?:any,
+  action?:{type:string, excute:any}
 }
 
 export function DataTable<TData, TValue>({
   columns,
   data,
+  deleteAct,
+  action,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
@@ -60,37 +64,50 @@ export function DataTable<TData, TValue>({
   return (
     <div className="w-full space-y-4">
       {/* Top Toolbar: Search Input + Column Visibility Dropdown */}
-      <div className="flex items-center justify-between gap-4 px-2">
+      <div className="flex items-center justify-between gap-4 px-2 sticky top-0 z-10">
         <Input
           placeholder="Filter payments..."
           value={table.getState()?.globalFilter ?? ""}
-          onChange={(event) =>  table.setGlobalFilter(event.target.value)}
+          onChange={(event) => table.setGlobalFilter(event.target.value)}
           className="max-w-sm"
         />
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button className="ml-auto">
-              Columns <ChevronDown className="ml-2 h-4 w-4" />
+        {table.getFilteredSelectedRowModel().rows.length > 0 ?
+          <div className="flex">
+            <Button variant="default" size="sm" 
+            onClick={()=>deleteAct(table.getFilteredSelectedRowModel().rows.map((row) => row.getValue("id")).join(","))}
+            >
+              <Trash className="mr-2 h-4 w-4" />
+              Delete
             </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {table
-              .getAllColumns()
-              .filter((column) => column.getCanHide())
-              .map((column) => {
-                return (
-                  <DropdownMenuCheckboxItem
-                    key={column.id}
-                    className="capitalize"
-                    checked={column.getIsVisible()}
-                    onCheckedChange={(value) => column.toggleVisibility(!!value)}
-                  >
-                    {column.id}
-                  </DropdownMenuCheckboxItem>
-                )
-              })}
-          </DropdownMenuContent>
-        </DropdownMenu>
+
+          </div>
+          :
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button className="ml-auto">
+                Columns <ChevronDown className="ml-2 h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {table
+                .getAllColumns()
+                .filter((column) => column.getCanHide())
+                .map((column) => {
+                  return (
+                    <DropdownMenuCheckboxItem
+                      key={column.id}
+                      className="capitalize"
+                      checked={column.getIsVisible()}
+                      onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                    >
+                      {column.id}
+                    </DropdownMenuCheckboxItem>
+                  )
+                })}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        }
       </div>
 
       {/* Main Data Table View */}
@@ -104,16 +121,16 @@ export function DataTable<TData, TValue>({
                     {header.isPlaceholder
                       ? null
                       : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
+                        header.column.columnDef.header,
+                        header.getContext()
+                      )}
                   </TableHead>
                 ))}
               </TableRow>
             ))}
           </TableHeader>
           <TableBody>
-           
+
             {table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
                 <TableRow
