@@ -2,6 +2,7 @@ import type { Product } from "~/routes/pos/newsale"
 import { Badge } from "../ui/badge"
 import { Button } from "../ui/button"
 import { Card, CardContent, CardHeader } from "../ui/card"
+import { handleDownload } from "~/lib/csvutils"
 
 
 

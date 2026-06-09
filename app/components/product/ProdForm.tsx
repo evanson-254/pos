@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { ReusableForm } from "../FetcherForm";
 import { useLoaderData } from "react-router";
@@ -9,6 +9,8 @@ import { Check } from "lucide-react";
 import { cn } from "~/lib/utils";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+
 
 // Define TypeScript structures directly
 export interface BranchInventory {
@@ -17,6 +19,9 @@ export interface BranchInventory {
     stock: number | null;
     localPrice: number | null;
     is_active: boolean;
+    available: number;
+    reason: string,
+
 }
 
 export interface ProductFormValues {
@@ -42,7 +47,7 @@ export const MultiBranchProductForm = ({ defaultValues, }: ProductFormProps) => 
     const { categories } = data || {};
     return (
         <ReusableForm<ProductFormValues> actionUrl={"/product/update/" + (defaultValues.id || "new")} defaults={defaultValues} resetOnSuccess={() => { }}>
-            {({ register, formState: { errors }, watch, control, setValue }, { state }) => {
+            {({ register, formState: { errors }, watch, control, setValue, reset }, { state, status }) => {
                 const { fields } = useFieldArray({ control, name: "branches" });
                 //console.log(errors);
                 // Core reactive watches
@@ -63,7 +68,7 @@ export const MultiBranchProductForm = ({ defaultValues, }: ProductFormProps) => 
                         const reader = new FileReader();
                         reader.onloadend = () => setImagePreview(reader.result as string);
                         reader.readAsDataURL(file);
-                    }else{
+                    } else {
                         setValue("imageFile", null);
                     }
                 };
@@ -84,7 +89,12 @@ export const MultiBranchProductForm = ({ defaultValues, }: ProductFormProps) => 
                     });
                     setBulkStock("");
                 };
-
+                useEffect(() => {
+                    if (defaultValues&& status==200) {
+                        reset(defaultValues);
+                        setImagePreview(defaultValues.initialImageUrl);
+                    }
+                }, [defaultValues, status]);
                 return (
                     <div className="space-y-8 max-w-6xl mx-auto pb-24 relative text-slate-800">
 
@@ -168,7 +178,7 @@ export const MultiBranchProductForm = ({ defaultValues, }: ProductFormProps) => 
                                             render={({ field }) => (
                                                 <Combobox
                                                     items={categories}
-                                                    defaultValue={categories.find((cat:any) => cat.id == defaultValues.category_id)}
+                                                    defaultValue={categories.find((cat: any) => cat.id == defaultValues.category_id)}
                                                     onValueChange={(e: any) => { field.onChange(e.id); }}
                                                     itemToStringValue={(cat) => cat.id}
                                                     itemToStringLabel={(cat) => cat.name}
@@ -264,8 +274,10 @@ export const MultiBranchProductForm = ({ defaultValues, }: ProductFormProps) => 
                                         <tr className="bg-slate-50 border-b border-slate-200">
                                             <th className="p-3 font-semibold text-slate-600">Branch Name</th>
                                             <th className="p-3 font-semibold text-slate-600 w-24">Status</th>
-                                            <th className="p-3 font-semibold text-slate-600 w-44">Stock Level *</th>
-                                            <th className="p-3 font-semibold text-slate-600">Local Price ($)</th>
+                                            <th className="p-3 font-semibold text-slate-600 w-24">existing stock</th>
+                                            <th className="p-3 font-semibold text-slate-600 w-44">Stock adjust *</th>
+                                            <th className="p-3 font-semibold text-slate-600 w-44">Reason</th>
+                                            <th className="p-3 font-semibold text-slate-600 w-60">Local Price ($)</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -281,6 +293,7 @@ export const MultiBranchProductForm = ({ defaultValues, }: ProductFormProps) => 
                                                         {field.name}
                                                         <input type="hidden" {...register(`branches.${index}.id`)} />
                                                         <input type="hidden" {...register(`branches.${index}.name`)} />
+                                                        <input type="hidden" {...register(`branches.${index}.available`)} />
                                                     </td>
 
                                                     {/* Status Toggle */}
@@ -295,6 +308,9 @@ export const MultiBranchProductForm = ({ defaultValues, }: ProductFormProps) => 
                                                             <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-slate-800"></div>
                                                         </label>
                                                     </td>
+                                                    <td className="p-3">
+                                                        <span>{watch(`branches.${index}.available`)}</span>
+                                                    </td>
 
                                                     {/* Inline Stock Input */}
                                                     <td className="p-3">
@@ -303,12 +319,45 @@ export const MultiBranchProductForm = ({ defaultValues, }: ProductFormProps) => 
                                                             className="w-full border rounded px-2 py-1 disabled:bg-slate-100 disabled:text-slate-400"
                                                             disabled={!rowAvailability}
                                                             {...register(`branches.${index}.stock`, {
-                                                                required: rowAvailability?"Branch stock required!": false,
-                                                                min: { value: 0, message: "No negative stock" }
+                                                                required: rowAvailability ? "Branch stock required!" : false,
+                                                                min: { value: field.available ? "-" + field.available : 0, message: `Value not less than -${field.available || 0}` }
                                                             })}
                                                         />
                                                         {errors.branches?.[index]?.stock && (
                                                             <span className="text-[11px] text-red-600 block mt-0.5">{errors.branches[index]?.stock?.message}</span>
+                                                        )}
+                                                    </td>
+                                                    <td>
+                                                        {field.available ?
+                                                            <Controller
+                                                                name={`branches.${index}.reason`}
+                                                                control={control}
+                                                                defaultValue={field.reason}
+                                                                rules={{ required: "Reason is required" }}
+                                                                render={({ field:customField }) => (
+                                                                    <Select defaultValue={field.reason} onValueChange={customField.onChange}>
+                                                                        <SelectTrigger aria-invalid={!!errors.branches?.[index]?.reason}>
+                                                                            <SelectValue  placeholder="Select a reason" />
+                                                                        </SelectTrigger>
+                                                                        <SelectContent>
+                                                                            <SelectItem value="Expired Product">Expired Product</SelectItem>
+                                                                            <SelectItem value="New Arrival">New Arrival</SelectItem>
+                                                                            <SelectItem value="Head count mismatch">Head count mismatch</SelectItem>
+                                                                            <SelectItem value="Physical shrinkage">Physical shrinkage</SelectItem>
+                                                                            <SelectItem value="Damaged product">Damaged product</SelectItem>
+                                                                            <SelectItem value="Administrative errors">Administrative errors</SelectItem>
+                                                                            <SelectItem value="Other">Other</SelectItem>
+                                                                        </SelectContent>
+                                                                    </Select>
+                                                                )}
+                                                            /> :
+                                                            <>
+                                                                <Input readOnly type="text" {...register(`branches.${index}.reason`)} />
+                                                                {/* <span>Inititial</span> */}
+                                                            </>
+                                                        }
+                                                        {errors.branches?.[index]?.reason && (
+                                                            <span className="text-[11px] text-red-600 block mt-0.5">{errors.branches[index]?.reason?.message}</span>
                                                         )}
                                                     </td>
 
@@ -319,7 +368,7 @@ export const MultiBranchProductForm = ({ defaultValues, }: ProductFormProps) => 
                                                                 <input
                                                                     type="number"
                                                                     step="0.01"
-                                                                    className={`w-full border rounded px-2 py-1 pr-14 disabled:bg-slate-100 ${isOverridden ? "border-amber-500 font-semibold text-amber-700 bg-amber-50/30" : "text-slate-500"}`}
+                                                                    className={`w-full border rounded px-2 py-1 pr-2 disabled:bg-slate-100 ${isOverridden ? "border-amber-500 font-semibold text-amber-700 bg-amber-50/30" : "text-slate-500"}`}
                                                                     placeholder={globalBasePrice.toString()}
                                                                     disabled={!rowAvailability}
                                                                     {...register(`branches.${index}.localPrice`, {
@@ -329,7 +378,7 @@ export const MultiBranchProductForm = ({ defaultValues, }: ProductFormProps) => 
                                                                 />
                                                                 {isOverridden && (
                                                                     <span className="absolute right-2 top-1.5 text-[9px] uppercase font-extrabold text-amber-600 bg-amber-100 px-1 rounded">
-                                                                        Custom
+                                                                        .
                                                                     </span>
                                                                 )}
                                                             </div>

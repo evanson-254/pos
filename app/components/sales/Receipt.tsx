@@ -87,6 +87,14 @@ export const Receipt = React.forwardRef<HTMLDivElement, ReceiptProps>(({ sale },
             <div className="text-center mt-6 text-[10px] text-gray-400">
                 Thank you for shopping with us!<br />Please keep this receipt.
             </div>
+             <style dangerouslySetInnerHTML={{
+                __html: `
+                @page {
+                    size: 80mm auto; /* 80mm wide, auto-scroll length */
+                    margin: 0mm !important;
+                    }
+
+                `}} />
         </div>
     );
 });

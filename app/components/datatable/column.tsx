@@ -1,4 +1,4 @@
-import { ArrowDownAZ, ArrowDownUp, ArrowUpAZ, ArrowUpDown, CheckCircle2, Download, Eye, MoreHorizontal, MoreVertical, PenBoxIcon, Trash, XCircle } from "lucide-react";
+import { ArrowDownAZ, ArrowDownUp, ArrowUpAZ, ArrowUpDown, CheckCircle2, Download, Eye, MoreHorizontal, MoreVertical, PenBoxIcon, Printer, Trash, XCircle } from "lucide-react";
 import { Button } from "../ui/button";
 import { Checkbox } from "../ui/checkbox"
 import { type Column, type ColumnDef, type Table } from "@tanstack/react-table";
@@ -384,7 +384,7 @@ export const refundColumn = ({ actions }: { actions: any }): ColumnDef<Refunds>[
 
 ];
 
-export const productsColumn = ({ delAct }: { delAct?: any }): ColumnDef<Product>[] => [
+export const productsColumn = ({ delAct, printAct, exportAct }: { delAct?: any, printAct?: any, exportAct?: any }): ColumnDef<Product>[] => [
   {
     id: "select",
     header: ({ table }) => (
@@ -419,14 +419,14 @@ export const productsColumn = ({ delAct }: { delAct?: any }): ColumnDef<Product>
   },
   {
     accessorKey: "price",
-    header: ({ column }) => <SortButton colname="branch price" column={column} />,
+    header: ({ column }) => <SortButton colname="Price" column={column} />,
     cell: ({ row }) => row.getValue("price") ?? row.getValue("selling_price")
 
   },
-  {
-    accessorKey: "selling_price",
-    header: ({ column }) => <SortButton colname="gen price" column={column} />,
-  },
+  // {
+  //   accessorKey: "selling_price",
+  //   header: ({ column }) => <SortButton colname="gen price" column={column} />,
+  // },
   {
     accessorKey: "quantity",
     header: ({ column }) => <SortButton colname="Stock" column={column} />,
@@ -435,10 +435,8 @@ export const productsColumn = ({ delAct }: { delAct?: any }): ColumnDef<Product>
     accessorKey: "branch",
     header: ({ column }) => <SortButton colname="Branch" column={column} />,
   },
-  {
-    accessorKey: "updated_at",
-    header: ({ column }) => <SortButton colname="Date" column={column} />,
-  },
+  
+  
 
 
   {
@@ -487,6 +485,10 @@ export const productsColumn = ({ delAct }: { delAct?: any }): ColumnDef<Product>
     }
   },
   {
+    accessorKey: "updated_at",
+    header: ({ column }) => <SortButton colname="Date" column={column} />,
+  },
+  {
 
     accessorKey: "id",
     header: () => <div className="text-right">Action</div>,
@@ -512,12 +514,17 @@ export const productsColumn = ({ delAct }: { delAct?: any }): ColumnDef<Product>
                 </Link>
 
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => delAct(row.getValue("id"))} >
-
+              <DropdownMenuItem onClick={() => delAct([row.original])} >
                 <Trash className="mr-2 h-4 w-4" />
-                Delete
-
-
+                Delete product
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => printAct([row.original])} >
+                <Printer className="mr-2 h-4 w-4" />
+                Print price tag
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => exportAct([row.original])} >
+                <Download className="mr-2 h-4 w-4" />
+                export csv
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

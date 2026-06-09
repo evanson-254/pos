@@ -17,6 +17,7 @@ import { Button } from "../ui/button"
 import { DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenu } from "../ui/dropdown-menu"
 import { Input } from "../ui/input"
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "../ui/table"
+import { cn } from "~/lib/utils"
 
 
 
@@ -24,14 +25,14 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from ".
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
   data: TData[],
-  deleteAct?:any,
-  action?:{type:string, excute:any}
+  actions?: any,
+  action?: { type: string, excute: any }
 }
 
 export function DataTable<TData, TValue>({
   columns,
   data,
-  deleteAct,
+  actions,
   action,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([])
@@ -71,42 +72,58 @@ export function DataTable<TData, TValue>({
           onChange={(event) => table.setGlobalFilter(event.target.value)}
           className="max-w-sm"
         />
-        {table.getFilteredSelectedRowModel().rows.length > 0 ?
-          <div className="flex">
-            <Button variant="default" size="sm" 
-            onClick={()=>deleteAct(table.getFilteredSelectedRowModel().rows.map((row) => row.getValue("id")).join(","))}
+        {table.getFilteredSelectedRowModel().rows.length > 0 && actions ?
+          <div
+            className={cn((table.getFilteredSelectedRowModel().rows.length > 0 && actions) ? "flex fixed bottom-5 left-1/2 -translate-x-1/2" : "hidden")}
+          >
+            <div className="flex bg-white rounded-md border border-gray-200 divide-x divide-gray-200 shadow-sm px-2 py-1 space-x-2">
+              {Object.keys(actions).map((key) => {
+                return <Button variant="default" size="sm" key={key} onClick={() => actions[key]?.act(table.getFilteredSelectedRowModel().rows.map((row)=>row.original))}>
+                  {actions[key].icon}
+                  {key}
+                </Button>
+              })}
+            </div>
+
+            {/* <Button variant="default" size="sm" 
+            onClick={()=>actions.delete(table.getFilteredSelectedRowModel().rows.map((row) => row.getValue("id")).join(","))}
             >
               <Trash className="mr-2 h-4 w-4" />
               Delete
-            </Button>
+            </Button> */}
+
 
           </div>
           :
+          <div
+            className={cn(table.getFilteredSelectedRowModel().rows.length > 0 && actions ? "hidden" : "flex")}
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button className="ml-auto">
-                Columns <ChevronDown className="ml-2 h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {table
-                .getAllColumns()
-                .filter((column) => column.getCanHide())
-                .map((column) => {
-                  return (
-                    <DropdownMenuCheckboxItem
-                      key={column.id}
-                      className="capitalize"
-                      checked={column.getIsVisible()}
-                      onCheckedChange={(value) => column.toggleVisibility(!!value)}
-                    >
-                      {column.id}
-                    </DropdownMenuCheckboxItem>
-                  )
-                })}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          >
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button className="ml-auto">
+                  Columns <ChevronDown className="ml-2 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {table
+                  .getAllColumns()
+                  .filter((column) => column.getCanHide())
+                  .map((column) => {
+                    return (
+                      <DropdownMenuCheckboxItem
+                        key={column.id}
+                        className="capitalize"
+                        checked={column.getIsVisible()}
+                        onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                      >
+                        {column.id}
+                      </DropdownMenuCheckboxItem>
+                    )
+                  })}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         }
       </div>
 

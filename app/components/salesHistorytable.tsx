@@ -1,10 +1,11 @@
-import { Receipt } from "lucide-react";
+import { Download, Receipt } from "lucide-react";
 import { salesColumn } from "./datatable/column";
 import { DataTable } from "./datatable/table";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardAction } from "./ui/card";
 import { Button } from "./ui/button";
 import { useLoaderData } from "react-router";
 import type { clientLoader } from "~/routes/pos/saleshistory";
+import { handleDownload } from "~/lib/csvutils";
 export type sales = {
   id: string;
   customer: string;
@@ -13,7 +14,7 @@ export type sales = {
   items: number;
   total: number;
   status: string;
-  sales:any;
+  sales: any;
 };
 
 const sales = [
@@ -55,8 +56,15 @@ const sales = [
   },
 ];
 
-export default function SalesHistoryDatatable({displayReceipt}:{displayReceipt:any}) {
+export default function SalesHistoryDatatable({ displayReceipt }: { displayReceipt: any }) {
   const { sales, stats } = useLoaderData<typeof clientLoader>();
+  const action={
+    export:{
+      name:"Export",
+      icon:<Download className="mr-2 h-4 w-4" />,
+      act:(data:any[])=>handleDownload(data?.map(({ sale, ...rest }: any) => rest) || [], "sale_history")
+    }
+  }
   return (
     <Card className="border-0 shadow-sm ">
       <CardHeader className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -70,14 +78,16 @@ export default function SalesHistoryDatatable({displayReceipt}:{displayReceipt:a
           </CardDescription>
         </div>
         <CardAction>
-          <Button className="">
+          <Button className=""
+            onClick={() => handleDownload(sales?.map(({ sale, ...rest }: any) => rest) || [], "sale_history")}
+          >
             <Receipt className="mr-2 h-4 w-4" />
             Export
           </Button>
         </CardAction>
       </CardHeader>
       <CardContent>
-        <DataTable columns={salesColumn({displayReceipt})} data={sales}/>
+        <DataTable columns={salesColumn({ displayReceipt })} data={sales} />
       </CardContent>
     </Card>
   )

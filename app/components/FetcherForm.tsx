@@ -61,7 +61,7 @@ export function ReusableForm<T extends FieldValues>({ actionUrl, defaults, reset
       resetOnSuccess?.();
     }
   }, [data, setError]);
-  const fetcherComp={state,data: data?.data}
+  const fetcherComp={state,data: data?.data,  status:data?.status}
   return (
     <Form method="post" action={actionUrl} onSubmit={handleSubmit(onSubmit)} encType="multipart/form-data">
       {children && children(methods, fetcherComp)}
