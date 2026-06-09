@@ -87,7 +87,7 @@ export default function SalesHistoryDatatable({ displayReceipt }: { displayRecei
         </CardAction>
       </CardHeader>
       <CardContent>
-        <DataTable columns={salesColumn({ displayReceipt })} data={sales} />
+        <DataTable columns={salesColumn({ displayReceipt })} data={sales} actions={action} />
       </CardContent>
     </Card>
   )
