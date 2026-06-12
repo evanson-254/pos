@@ -20,7 +20,7 @@ export default [
         route("reports/inventory", "routes/reports/inventory.tsx"),
         route("reports/cashier", "routes/reports/cashier.tsx"),
         route("reports/financial", "routes/reports/financial.tsx"),
-        route("branch/:id?", "routes/branch.tsx"),
+        route("branch/:id?", "routes/Branch.tsx"),
     ]),
     layout("layout/AuthenticationLayout.tsx", [
         route("login", "routes/auth/login.tsx"),
