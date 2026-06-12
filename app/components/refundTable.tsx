@@ -3,6 +3,8 @@ import { refundColumn } from "./datatable/column";
 import { DataTable } from "./datatable/table";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "./ui/card";
 import type { clientLoader } from "~/routes/pos/refunds";
+import { Download } from "lucide-react";
+import { handleDownload } from "~/lib/csvutils";
 
 export type Refunds = {
     id: string,
@@ -47,6 +49,13 @@ const refunds = [
 
 export default function RefundTable({actions}:{actions:any}) {
     const { refunds } = useLoaderData<typeof clientLoader>();
+    const action = {
+        export: {
+            name: "Export",
+            icon: <Download className="mr-2 h-4 w-4" />,
+            act: (data: any[]) => handleDownload(data?.map(({ sale, ...rest }: any) => rest) || [], "refund_history")
+        }
+    }
     return(
         <Card className="">
             <CardHeader>
@@ -54,7 +63,7 @@ export default function RefundTable({actions}:{actions:any}) {
                 <CardDescription>View and manage refund history</CardDescription>
             </CardHeader>
             <CardContent>
-                <DataTable columns={refundColumn({actions})} data={refunds} />
+                <DataTable columns={refundColumn({actions})} data={refunds} actions={action}/>
             </CardContent>
         </Card>
     )

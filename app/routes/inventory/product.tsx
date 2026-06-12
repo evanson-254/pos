@@ -136,7 +136,8 @@ export default function Products({ loaderData }: Route.ComponentProps) {
                             ))}
                         </span>
 
-                        <DeleteForm id={selectedProducts} itemName={"Products"} path={"/products"} action={"delete"} state={() => setOpen(false)} />
+                        <DeleteForm id={selectedProducts?.map((p)=>p.id).join(",") || ""} 
+                        itemName={"Products"} path={"/products"} action={"delete"} state={() => setOpen(false)} />
                     </>}
                     {item == "print" && <div className=" relative">
                         <Button onClick={handlePrint} className="sticky top-0 right-0">Print Barcode</Button>
