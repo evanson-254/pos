@@ -1,7 +1,8 @@
 import axios from "axios";
 import { toast } from "sonner";
 
-const baseUrl = "http://localhost:8000";
+
+const baseUrl = import.meta.env.VITE_API_URL;
 const apiExt = "/api/v1";
 const apiUrl = baseUrl + apiExt;
 
